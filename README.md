@@ -1,7 +1,10 @@
 # Cloud Pathway Labs
 
-The purpose of this repo is to store all lab related items for the cloud pathway program. This can be used by students and non students
-to stream line the proecss of building AWS infrastcuture. **These labs are continously being refined**
+This repository contains all lab-related resources for the Cloud Pathway Program. It is designed to help both students and independent learners streamline the process of building and deploying AWS infrastructure through hands-on labs.
+
+The materials in this repository are intended to provide practical experience with cloud concepts and infrastructure development.
+
+**Note**: These labs are continuously being updated and refined to improve clarity, functionality, and learning outcomes.
 
 ## Table of Contents
 
