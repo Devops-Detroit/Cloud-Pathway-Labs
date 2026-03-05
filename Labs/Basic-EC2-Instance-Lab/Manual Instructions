@@ -1,0 +1,106 @@
+# Basic EC2 Instance Lab - Manual Instructions
+
+## Overview
+This lab creates a public EC2 instance in a custom VPC with internet connectivity.
+
+## Prerequisites
+- AWS Account with appropriate permissions
+- AWS Console access
+
+## Step-by-Step Instructions
+
+### 1. Create VPC
+1. Navigate to VPC Dashboard
+2. Click "Create VPC"
+3. Configure:
+   - Name: `Devops-Detroit-VPC`
+   - IPv4 CIDR: `10.0.0.0/16`
+4. Click "Create VPC"
+
+### 2. Create Public Subnet
+1. In VPC Dashboard, select "Subnets"
+2. Click "Create subnet"
+3. Configure:
+   - VPC: Select `Devops-Detroit-VPC`
+   - Name: `Public Subnet`
+   - Availability Zone: `us-east-1a`
+   - IPv4 CIDR: `10.0.0.0/24`
+4. Click "Create subnet"
+5. Select the subnet, click "Actions" → "Edit subnet settings"
+6. Enable "Auto-assign public IPv4 address"
+7. Click "Save"
+
+### 3. Create Internet Gateway
+1. In VPC Dashboard, select "Internet Gateways"
+2. Click "Create internet gateway"
+3. Name: `MyInternetGateway`
+4. Click "Create internet gateway"
+5. Select the gateway, click "Actions" → "Attach to VPC"
+6. Select `Devops-Detroit-VPC`
+7. Click "Attach internet gateway"
+
+### 4. Create Route Table
+1. In VPC Dashboard, select "Route Tables"
+2. Click "Create route table"
+3. Configure:
+   - Name: `Public Routing TB`
+   - VPC: Select `Devops-Detroit-VPC`
+4. Click "Create route table"
+5. Select the route table, go to "Routes" tab
+6. Click "Edit routes" → "Add route"
+7. Configure:
+   - Destination: `0.0.0.0/0`
+   - Target: Select `MyInternetGateway`
+8. Click "Save changes"
+9. Go to "Subnet associations" tab
+10. Click "Edit subnet associations"
+11. Select `Public Subnet`
+12. Click "Save associations"
+
+### 5. Create Security Group
+1. In VPC Dashboard, select "Security Groups"
+2. Click "Create security group"
+3. Configure:
+   - Name: `Public Security Group`
+   - Description: `Rules for the public EC2 instances`
+   - VPC: Select `Devops-Detroit-VPC`
+4. Add Inbound Rules:
+   - Type: SSH
+   - Protocol: TCP
+   - Port: 22
+   - Source: `0.0.0.0/0`
+5. Add Outbound Rules:
+   - Type: All traffic
+   - Protocol: All
+   - Port range: All
+   - Destination: `0.0.0.0/0`
+6. Click "Create security group"
+
+### 6. Launch EC2 Instance
+1. Navigate to EC2 Dashboard
+2. Click "Launch Instance"
+3. Configure:
+   - Name: `Publc_EC2_instance_1`
+   - AMI: `ami-07761f3ae34c4478d` (Amazon Linux 2023)
+   - Instance type: `t2.micro`
+   - Key pair: Select or create a key pair
+   - Network settings:
+     - VPC: `Devops-Detroit-VPC`
+     - Subnet: `Public Subnet`
+     - Auto-assign public IP: Enable
+     - Security group: Select `Public Security Group`
+4. Click "Launch instance"
+
+### 7. Verify Deployment
+1. Wait for instance state to show "Running"
+2. Copy the public IP address
+3. SSH into the instance: `ssh ec2-user@<public-ip>`
+
+## Cleanup
+To avoid charges, delete resources in reverse order:
+1. Terminate EC2 instance
+2. Delete security group
+3. Delete route table
+4. Detach and delete internet gateway
+5. Delete subnet
+6. Delete VPC

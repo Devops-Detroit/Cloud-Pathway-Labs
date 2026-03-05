@@ -110,15 +110,7 @@ resource "aws_instance" "Public_Ec2_instance_1" {
   
   subnet_id = aws_subnet.Public_Subnet.id
   vpc_security_group_ids = [aws_security_group.Public_security_Group.id]
-  user_data = <<EOF
-  #!/bin/bash 
-  sudo su     
-  yum update -y       
-  yum install httpd -y       
-  systemctl start httpd           
-  systemctl enable httpd
-  
-  EOF
+ 
   tags = {
     Name = "Publc_EC2_instance_1"
   }

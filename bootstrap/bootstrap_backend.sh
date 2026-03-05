@@ -31,11 +31,12 @@ empty_versioned_bucket() {
     aws s3api delete-objects --bucket "$S3NAME" --delete "$payload" >/dev/null
   done
 }
-
+``
 delete_all() {
+  echo "Delete function"
   # Destroy infra FIRST (so terraform can still access the backend)
-  terraform init -reconfigure
-  terraform destroy -auto-approve
+  # terraform init -reconfigure
+  # terraform destroy -auto-approve
 
   # Then clean up the backend bucket
   aws s3api put-bucket-versioning \
