@@ -13,8 +13,8 @@ create_bucket() {
     --bucket "$S3NAME" \
     --versioning-configuration Status=Enabled
 
-  terraform init -reconfigure
-  terraform apply -auto-approve
+  # terraform init -reconfigure
+  # terraform apply -auto-approve
 }
 
 empty_versioned_bucket() {
