@@ -1,3 +1,11 @@
+###############################
+# - Infrastructure
+#   *EC2 Instance with a SSM role and specified ports open
+###############################
+
+
+
+
 terraform {
   required_providers {
     aws = {

@@ -1,3 +1,11 @@
+###############################
+# - Infrastructure
+#   *A single VPC with 1 public subent
+###############################
+
+
+
+
 terraform {
   required_providers {
     aws = {
