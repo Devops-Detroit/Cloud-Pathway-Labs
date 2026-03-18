@@ -61,3 +61,5 @@ resource "aws_route_table_association" "Public_RT_assocation" {
   route_table_id = aws_route_table.Public.id
   depends_on = [ aws_route_table.Public]
 }
+
+

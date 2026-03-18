@@ -1,0 +1,137 @@
+# VPC Peering Lab - Manual Instructions
+
+## Overview
+This lab creates two VPCs in different availability zones and establishes a peering connection between them, allowing private traffic to route across both networks.
+
+## Prerequisites
+- AWS Account with appropriate permissions
+- AWS Console access
+
+## Infrastructure Summary
+| Resource | VPC-A | VPC-B |
+|---|---|---|
+| CIDR | 10.0.0.0/16 | 10.1.0.0/16 |
+| Subnet | 10.0.0.0/24 | 10.1.0.0/24 |
+| Availability Zone | us-east-1a | us-east-1b |
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Create VPC-A
+1. Navigate to the VPC Dashboard
+2. Click "Create VPC"
+3. Configure:
+   - Name: `Devops-Detroit-VPC-A`
+   - IPv4 CIDR: `10.0.0.0/16`
+4. Click "Create VPC"
+
+### 2. Create VPC-B
+1. Click "Create VPC" again
+2. Configure:
+   - Name: `Devops-Detroit-VPC-B`
+   - IPv4 CIDR: `10.1.0.0/16`
+3. Click "Create VPC"
+
+### 3. Create Subnets
+Repeat for each VPC:
+
+**VPC-A Subnet**
+1. In VPC Dashboard, select "Subnets" → "Create subnet"
+2. Configure:
+   - VPC: `Devops-Detroit-VPC-A`
+   - Name: `Public_Subnet_A`
+   - Availability Zone: `us-east-1a`
+   - IPv4 CIDR: `10.0.0.0/24`
+3. Click "Create subnet"
+
+**VPC-B Subnet**
+1. Click "Create subnet" again
+2. Configure:
+   - VPC: `Devops-Detroit-VPC-B`
+   - Name: `Public_Subnet_B`
+   - Availability Zone: `us-east-1b`
+   - IPv4 CIDR: `10.1.0.0/24`
+3. Click "Create subnet"
+
+### 4. Create Internet Gateways
+Repeat for each VPC:
+
+**IGW for VPC-A**
+1. In VPC Dashboard, select "Internet Gateways" → "Create internet gateway"
+2. Name: `IGW-VPC-A`
+3. Click "Create internet gateway"
+4. Select it → "Actions" → "Attach to VPC" → select `Devops-Detroit-VPC-A`
+
+**IGW for VPC-B**
+1. Click "Create internet gateway"
+2. Name: `IGW-VPC-B`
+3. Click "Create internet gateway"
+4. Select it → "Actions" → "Attach to VPC" → select `Devops-Detroit-VPC-B`
+
+### 5. Create Route Tables
+Repeat for each VPC:
+
+**Route Table for VPC-A**
+1. In VPC Dashboard, select "Route Tables" → "Create route table"
+2. Configure:
+   - Name: `Public_RT_A`
+   - VPC: `Devops-Detroit-VPC-A`
+3. Click "Create route table"
+4. Select it → "Routes" tab → "Edit routes" → "Add route"
+   - Destination: `0.0.0.0/0`
+   - Target: `IGW-VPC-A`
+5. Click "Save changes"
+6. Go to "Subnet associations" → "Edit subnet associations" → select `Public_Subnet_A`
+
+**Route Table for VPC-B**
+1. Click "Create route table"
+2. Configure:
+   - Name: `Public_RT_B`
+   - VPC: `Devops-Detroit-VPC-B`
+3. Click "Create route table"
+4. Add route:
+   - Destination: `0.0.0.0/0`
+   - Target: `IGW-VPC-B`
+5. Associate with `Public_Subnet_B`
+
+### 6. Create VPC Peering Connection
+1. In VPC Dashboard, select "Peering Connections" → "Create peering connection"
+2. Configure:
+   - Name: `VPC-A-to-VPC-B`
+   - VPC (Requester): `Devops-Detroit-VPC-A`
+   - VPC (Accepter): `Devops-Detroit-VPC-B`
+3. Click "Create peering connection"
+4. Select the peering connection → "Actions" → "Accept request"
+5. Click "Accept request" to confirm
+
+### 7. Add Peering Routes
+Both VPCs need a route pointing to the peering connection for cross-VPC traffic.
+
+**Add route to VPC-A Route Table**
+1. Select `Public_RT_A` → "Routes" tab → "Edit routes" → "Add route"
+2. Configure:
+   - Destination: `10.1.0.0/16`
+   - Target: Select the peering connection `VPC-A-to-VPC-B`
+3. Click "Save changes"
+
+**Add route to VPC-B Route Table**
+1. Select `Public_RT_B` → "Routes" tab → "Edit routes" → "Add route"
+2. Configure:
+   - Destination: `10.0.0.0/16`
+   - Target: Select the peering connection `VPC-A-to-VPC-B`
+3. Click "Save changes"
+
+### 8. Verify Peering Connection
+1. In VPC Dashboard, select "Peering Connections"
+2. Confirm the status shows "Active"
+3. Verify both route tables contain the peering routes
+
+## Cleanup
+To avoid charges, delete resources in reverse order:
+1. Delete peering routes from both route tables
+2. Delete the peering connection
+3. Disassociate and delete both route tables
+4. Detach and delete both internet gateways
+5. Delete both subnets
+6. Delete both VPCs

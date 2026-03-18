@@ -10,3 +10,9 @@ output "internet_gw_id" {
   value = aws_internet_gateway.IGW.id
   
 }
+
+output "public_route_table_id" {
+  value = aws_route_table.Public.id
+}
+
+
