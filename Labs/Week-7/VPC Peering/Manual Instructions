@@ -20,10 +20,11 @@ This lab creates two VPCs in different availability zones and establishes a peer
 
 ### 1. Create VPC-A
 1. Navigate to the VPC Dashboard
-2. Click "Create VPC"
+2. Click "Create VPC"  ## VPC only or VPC and more ?
 3. Configure:
    - Name: `Devops-Detroit-VPC-A`
    - IPv4 CIDR: `10.0.0.0/16`
+## Maybe a statement here to leave everything else with the "default" settings?
 4. Click "Create VPC"
 
 ### 2. Create VPC-B
@@ -31,6 +32,7 @@ This lab creates two VPCs in different availability zones and establishes a peer
 2. Configure:
    - Name: `Devops-Detroit-VPC-B`
    - IPv4 CIDR: `10.1.0.0/16`
+## Maybe a statement here to leave everything else with the "default" settings?
 3. Click "Create VPC"
 
 ### 3. Create Subnets
@@ -42,7 +44,8 @@ Repeat for each VPC:
    - VPC: `Devops-Detroit-VPC-A`
    - Name: `Public_Subnet_A`
    - Availability Zone: `us-east-1a`
-   - IPv4 CIDR: `10.0.0.0/24`
+   - IPv4 CIDR: `10.0.0.0/24` ## should this say "IPv4 subnet CIDR" instead?
+## Maybe a statement here to leave everything else with the "default" settings?
 3. Click "Create subnet"
 
 **VPC-B Subnet**
@@ -51,7 +54,8 @@ Repeat for each VPC:
    - VPC: `Devops-Detroit-VPC-B`
    - Name: `Public_Subnet_B`
    - Availability Zone: `us-east-1b`
-   - IPv4 CIDR: `10.1.0.0/24`
+   - IPv4 CIDR: `10.1.0.0/24` ## should this say "IPv4 subnet CIDR" instead?
+## Maybe a statement here to leave everything else with the "default" settings?
 3. Click "Create subnet"
 
 ### 4. Create Internet Gateways
@@ -78,7 +82,7 @@ Repeat for each VPC:
    - Name: `Public_RT_A`
    - VPC: `Devops-Detroit-VPC-A`
 3. Click "Create route table"
-4. Select it → "Routes" tab → "Edit routes" → "Add route"
+4. Select it → "Routes" tab → "Edit routes" → "Add route" (Clikcing the Action tab)
    - Destination: `0.0.0.0/0`
    - Target: `IGW-VPC-A`
 5. Click "Save changes"
