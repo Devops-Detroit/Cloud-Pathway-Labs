@@ -53,3 +53,47 @@ resource "aws_route" "b_to_a" {
   destination_cidr_block    = "10.0.0.0/16"
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
+
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  for_each          = { for vpc in local.vpc_config_set : vpc.vpc_name => vpc }
+  name              = "/aws/vpc/flow-logs/${each.key}"
+  retention_in_days = 7
+}
+
+resource "aws_iam_role" "vpc_flow_logs_role" {
+  name = "vpc-flow-logs-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "vpc-flow-logs.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "vpc_flow_logs_policy" {
+  name = "vpc-flow-logs-policy"
+  role = aws_iam_role.vpc_flow_logs_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_flow_log" "vpc_flow_logs" {
+  for_each        = { for vpc in local.vpc_config_set : vpc.vpc_name => vpc }
+  vpc_id          = module.VPC[each.key].vpc_id
+  traffic_type    = "ALL"
+  iam_role_arn    = aws_iam_role.vpc_flow_logs_role.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_logs[each.key].arn
+}

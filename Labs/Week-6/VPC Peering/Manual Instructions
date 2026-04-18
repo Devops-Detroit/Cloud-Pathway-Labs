@@ -1,7 +1,7 @@
 # VPC Peering Lab - Manual Instructions
 
 ## Overview
-This lab creates two VPCs in different availability zones and establishes a peering connection between them, allowing private traffic to route across both networks.
+This lab creates two VPCs in different availability zones, establishes a peering connection between them, and enables VPC Flow Logs for both VPCs sending traffic data to CloudWatch Logs.
 
 ## Prerequisites
 - AWS Account with appropriate permissions
@@ -34,7 +34,6 @@ This lab creates two VPCs in different availability zones and establishes a peer
 3. Click "Create VPC"
 
 ### 3. Create Subnets
-Repeat for each VPC:
 
 **VPC-A Subnet**
 1. In VPC Dashboard, select "Subnets" → "Create subnet"
@@ -55,7 +54,6 @@ Repeat for each VPC:
 3. Click "Create subnet"
 
 ### 4. Create Internet Gateways
-Repeat for each VPC:
 
 **IGW for VPC-A**
 1. In VPC Dashboard, select "Internet Gateways" → "Create internet gateway"
@@ -70,7 +68,6 @@ Repeat for each VPC:
 4. Select it → "Actions" → "Attach to VPC" → select `Devops-Detroit-VPC-B`
 
 ### 5. Create Route Tables
-Repeat for each VPC:
 
 **Route Table for VPC-A**
 1. In VPC Dashboard, select "Route Tables" → "Create route table"
@@ -106,7 +103,6 @@ Repeat for each VPC:
 5. Click "Accept request" to confirm
 
 ### 7. Add Peering Routes
-Both VPCs need a route pointing to the peering connection for cross-VPC traffic.
 
 **Add route to VPC-A Route Table**
 1. Select `Public_RT_A` → "Routes" tab → "Edit routes" → "Add route"
@@ -122,16 +118,85 @@ Both VPCs need a route pointing to the peering connection for cross-VPC traffic.
    - Target: Select the peering connection `VPC-A-to-VPC-B`
 3. Click "Save changes"
 
-### 8. Verify Peering Connection
-1. In VPC Dashboard, select "Peering Connections"
-2. Confirm the status shows "Active"
-3. Verify both route tables contain the peering routes
+### 8. Create IAM Role for VPC Flow Logs
+1. Navigate to IAM Dashboard
+2. Select "Roles" → "Create role"
+3. Configure:
+   - Trusted entity type: AWS service
+   - Use case: Select "EC2" then search for and select "VPC Flow Logs"
+4. Click "Next"
+5. Click "Next" (skip permissions for now)
+6. Role name: `vpc-flow-logs-role`
+7. Click "Create role"
+8. Select the newly created role → "Permissions" tab → "Add permissions" → "Create inline policy"
+9. Switch to JSON editor and paste:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Action": [
+         "logs:CreateLogStream",
+         "logs:PutLogEvents",
+         "logs:DescribeLogGroups",
+         "logs:DescribeLogStreams"
+       ],
+       "Resource": "*"
+     }]
+   }
+   ```
+10. Policy name: `vpc-flow-logs-policy`
+11. Click "Create policy"
+
+### 9. Create CloudWatch Log Groups
+1. Navigate to CloudWatch Dashboard
+2. Select "Log groups" → "Create log group"
+3. Configure:
+   - Log group name: `/aws/vpc/flow-logs/Devops-Detroit-VPC-A`
+   - Retention: 7 days
+4. Click "Create"
+5. Click "Create log group" again
+6. Configure:
+   - Log group name: `/aws/vpc/flow-logs/Devops-Detroit-VPC-B`
+   - Retention: 7 days
+7. Click "Create"
+
+### 10. Enable VPC Flow Logs
+
+**Flow Logs for VPC-A**
+1. Navigate to VPC Dashboard → select `Devops-Detroit-VPC-A`
+2. Go to "Flow logs" tab → "Create flow log"
+3. Configure:
+   - Filter: All
+   - Destination: Send to CloudWatch Logs
+   - Destination log group: `/aws/vpc/flow-logs/Devops-Detroit-VPC-A`
+   - IAM role: `vpc-flow-logs-role`
+4. Click "Create flow log"
+
+**Flow Logs for VPC-B**
+1. Select `Devops-Detroit-VPC-B`
+2. Go to "Flow logs" tab → "Create flow log"
+3. Configure:
+   - Filter: All
+   - Destination: Send to CloudWatch Logs
+   - Destination log group: `/aws/vpc/flow-logs/Devops-Detroit-VPC-B`
+   - IAM role: `vpc-flow-logs-role`
+4. Click "Create flow log"
+
+### 11. Verify Setup
+1. In VPC Dashboard, confirm peering connection status shows "Active"
+2. Verify both route tables contain the peering routes
+3. In CloudWatch, confirm both log groups exist under `/aws/vpc/flow-logs/`
+4. After generating some traffic, verify log streams appear in each log group
 
 ## Cleanup
 To avoid charges, delete resources in reverse order:
-1. Delete peering routes from both route tables
-2. Delete the peering connection
-3. Disassociate and delete both route tables
-4. Detach and delete both internet gateways
-5. Delete both subnets
-6. Delete both VPCs
+1. Delete VPC flow logs from both VPCs
+2. Delete both CloudWatch log groups
+3. Delete the IAM inline policy then the IAM role
+4. Delete peering routes from both route tables
+5. Delete the peering connection
+6. Disassociate and delete both route tables
+7. Detach and delete both internet gateways
+8. Delete both subnets
+9. Delete both VPCs
