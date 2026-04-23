@@ -31,7 +31,7 @@ locals {
 module "VPC" {
     for_each = { for vpc in local.vpc_config_set : vpc.vpc_name => vpc }
     vpc_name = each.value.vpc_name
-    source = "../my_modules/VPC"
+    source = "../../my_modules/VPC"
     vpc_cidr = each.value.vpc_cidr
     availability_zone_1 = each.value.availability_zone_1
 }
