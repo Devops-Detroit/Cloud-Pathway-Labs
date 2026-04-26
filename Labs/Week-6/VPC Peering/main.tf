@@ -54,6 +54,15 @@ resource "aws_route" "b_to_a" {
   vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
+module "EC2" {
+  for_each         = { for vpc in local.vpc_config_set : vpc.vpc_name => vpc }
+  source           = "../../my_modules/EC2"
+  instance_name    = "Instance-${each.key}"
+  vpc_id           = module.VPC[each.key].vpc_id
+  public_subnet_id = module.VPC[each.key].public_subnet_id
+  sg_ports         = ["22", "443"]
+}
+
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   for_each          = { for vpc in local.vpc_config_set : vpc.vpc_name => vpc }
   name              = "/aws/vpc/flow-logs/${each.key}"
