@@ -1,0 +1,225 @@
+# ELB & ASG Lab - Manual Instructions
+
+## Overview
+This lab builds a highly available web application infrastructure using an Application Load Balancer (ALB) and Auto Scaling Group (ASG). Traffic from the internet hits the ALB, which distributes it across EC2 instances managed by the ASG across two availability zones.
+
+## Architecture Diagram
+```
+Internet
+    |
+[ALB - Port 80]
+    |
+[Target Group]
+   / \
+[EC2] [EC2]   <-- managed by ASG (min: 2, max: 4)
+  AZ-1a      AZ-1b
+```
+
+## Prerequisites
+- AWS Account with appropriate permissions
+- AWS Console access
+
+## Infrastructure Summary
+| Resource | Value |
+|---|---|
+| VPC CIDR | 10.0.0.0/16 |
+| Subnet 1 | 10.0.0.0/24 (us-east-1a) |
+| Subnet 2 | 10.1.0.0/24 (us-east-1b) |
+| AMI | ami-0a232144cf20a27a5 |
+| Instance Type | t2.micro |
+| ASG Min/Desired/Max | 2 / 2 / 4 |
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Create VPC
+1. Navigate to VPC Dashboard
+2. Click "Create VPC"
+3. Configure:
+   - Name: `Devops-Detroit-VPC`
+   - IPv4 CIDR: `10.0.0.0/16`
+4. Click "Create VPC"
+
+### 2. Create Internet Gateway
+1. In VPC Dashboard, select "Internet Gateways" → "Create internet gateway"
+2. Name: `Devops-Detroit-IGW`
+3. Click "Create internet gateway"
+4. Select it → "Actions" → "Attach to VPC" → select `Devops-Detroit-VPC`
+
+### 3. Create Public Subnets
+Create two subnets in different availability zones for high availability.
+
+**Subnet 1**
+1. In VPC Dashboard, select "Subnets" → "Create subnet"
+2. Configure:
+   - VPC: `Devops-Detroit-VPC`
+   - Name: `Public-Subnet-1`
+   - Availability Zone: `us-east-1a`
+   - IPv4 CIDR: `10.0.0.0/24`
+3. Click "Create subnet"
+4. Select it → "Actions" → "Edit subnet settings" → enable "Auto-assign public IPv4 address"
+
+**Subnet 2**
+1. Click "Create subnet"
+2. Configure:
+   - VPC: `Devops-Detroit-VPC`
+   - Name: `Public-Subnet-2`
+   - Availability Zone: `us-east-1b`
+   - IPv4 CIDR: `10.0.1.0/24`
+3. Click "Create subnet"
+4. Enable "Auto-assign public IPv4 address"
+
+### 4. Create Route Table
+1. In VPC Dashboard, select "Route Tables" → "Create route table"
+2. Configure:
+   - Name: `Public-RT`
+   - VPC: `Devops-Detroit-VPC`
+3. Click "Create route table"
+4. Select it → "Routes" tab → "Edit routes" → "Add route"
+   - Destination: `0.0.0.0/0`
+   - Target: `Devops-Detroit-IGW`
+5. Click "Save changes"
+6. Go to "Subnet associations" → "Edit subnet associations"
+7. Select both `Public-Subnet-1` and `Public-Subnet-2`
+8. Click "Save associations"
+
+### 5. Create Security Groups
+
+**ALB Security Group**
+1. In VPC Dashboard, select "Security Groups" → "Create security group"
+2. Configure:
+   - Name: `ALB-Security-Group`
+   - Description: `Allow HTTP inbound traffic to ALB`
+   - VPC: `Devops-Detroit-VPC`
+3. Add Inbound Rule:
+   - Type: HTTP | Protocol: TCP | Port: 80 | Source: `0.0.0.0/0`
+4. Outbound Rule: All traffic to `0.0.0.0/0` (default)
+5. Click "Create security group"
+
+**EC2 Security Group**
+1. Click "Create security group"
+2. Configure:
+   - Name: `EC2-Security-Group`
+   - Description: `Allow HTTP from ALB only`
+   - VPC: `Devops-Detroit-VPC`
+3. Add Inbound Rule:
+   - Type: HTTP | Protocol: TCP | Port: 80 | Source: Select `ALB-Security-Group`
+4. Outbound Rule: All traffic to `0.0.0.0/0` (default)
+5. Click "Create security group"
+
+> **Note:** The EC2 security group only allows traffic from the ALB, not directly from the internet. This is a security best practice.
+
+### 6. Create Target Group
+1. Navigate to EC2 Dashboard → "Target Groups" → "Create target group"
+2. Configure:
+   - Target type: Instances
+   - Name: `Devops-Detroit-TG`
+   - Protocol: HTTP
+   - Port: 80
+   - VPC: `Devops-Detroit-VPC`
+3. Configure Health Check:
+   - Protocol: HTTP
+   - Path: `/`
+   - Healthy threshold: 2
+   - Unhealthy threshold: 2
+   - Timeout: 5 seconds
+   - Interval: 30 seconds
+   - Success codes: 200
+4. Click "Next" → "Create target group" (do not register targets manually — the ASG will handle this)
+
+### 7. Create Application Load Balancer
+1. Navigate to EC2 Dashboard → "Load Balancers" → "Create load balancer"
+2. Select "Application Load Balancer" → "Create"
+3. Configure:
+   - Name: `Devops-Detroit-ALB`
+   - Scheme: Internet-facing
+   - IP address type: IPv4
+   - VPC: `Devops-Detroit-VPC`
+   - Mappings: Select both `Public-Subnet-1` (us-east-1a) and `Public-Subnet-2` (us-east-1b)
+   - Security groups: Select `ALB-Security-Group`
+4. Configure Listener:
+   - Protocol: HTTP | Port: 80
+   - Default action: Forward to `Devops-Detroit-TG`
+5. Click "Create load balancer"
+6. Note the DNS name from the ALB details page
+
+### 8. Create Launch Template
+1. Navigate to EC2 Dashboard → "Launch Templates" → "Create launch template"
+2. Configure:
+   - Name: `Devops-Detroit-LT`
+   - AMI: `ami-0a232144cf20a27a5` (Amazon Linux 2023)
+   - Instance type: `t2.micro`
+   - Network settings:
+     - Do not include subnet in template
+     - Security groups: Select `EC2-Security-Group`
+     - Auto-assign public IP: Enable
+3. Expand "Advanced details"
+4. In "User data" paste:
+   ```bash
+   #!/bin/bash
+   yum update -y
+   yum install httpd -y
+   systemctl start httpd
+   systemctl enable httpd
+   echo "<h1>Hello from $(hostname)</h1>" > /var/www/html/index.html
+   ```
+5. Add tag under "Resource tags":
+   - Key: `Name` | Value: `Devops-Detroit-EC2`
+6. Click "Create launch template"
+
+### 9. Create Auto Scaling Group
+1. Navigate to EC2 Dashboard → "Auto Scaling Groups" → "Create Auto Scaling group"
+2. Configure:
+   - Name: `Devops-Detroit-ASG`
+   - Launch template: `Devops-Detroit-LT` (Latest version)
+3. Click "Next"
+4. Configure Network:
+   - VPC: `Devops-Detroit-VPC`
+   - Availability Zones and subnets: Select both `Public-Subnet-1` and `Public-Subnet-2`
+5. Click "Next"
+6. Configure Load Balancing:
+   - Select "Attach to an existing load balancer"
+   - Choose "Choose from your load balancer target groups"
+   - Select `Devops-Detroit-TG`
+   - Health check type: ELB
+   - Health check grace period: 60 seconds
+7. Click "Next"
+8. Configure Group Size:
+   - Desired capacity: `2`
+   - Minimum capacity: `2`
+   - Maximum capacity: `4`
+9. Click "Next" through remaining steps → "Create Auto Scaling group"
+
+### 10. Verify Deployment
+1. Navigate to EC2 Dashboard → "Instances"
+   - Confirm 2 instances are launching with the name `Devops-Detroit-ASG-Instance`
+2. Navigate to "Target Groups" → select `Devops-Detroit-TG` → "Targets" tab
+   - Wait for both instances to show status "healthy"
+3. Navigate to "Load Balancers" → select `Devops-Detroit-ALB`
+   - Copy the DNS name
+4. Paste the DNS name into a browser
+   - You should see "Hello from `<hostname>`"
+5. Refresh the page multiple times to observe the ALB routing traffic to different instances
+
+> **Note:** It may take 2-3 minutes for instances to pass health checks and start receiving traffic.
+
+## Key Concepts for Students
+
+- ALB distributes incoming HTTP traffic across healthy EC2 instances
+- The ASG ensures a minimum of 2 instances are always running
+- If an instance fails its health check, the ASG automatically replaces it
+- The EC2 security group only accepts traffic from the ALB security group, not directly from the internet
+- Instances are spread across two availability zones for fault tolerance
+
+## Cleanup
+To avoid charges, delete resources in reverse order:
+1. Delete the Auto Scaling Group
+2. Delete the Launch Template
+3. Delete the Load Balancer
+4. Delete the Target Group
+5. Delete both Security Groups (EC2-SG first, then ALB-SG)
+6. Disassociate and delete the Route Table
+7. Detach and delete the Internet Gateway
+8. Delete both Subnets
+9. Delete the VPC
