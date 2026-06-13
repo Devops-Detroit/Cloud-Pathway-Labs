@@ -126,12 +126,12 @@ This lab creates two VPCs in different availability zones, establishes a peering
    - Use case: Select "EC2" 
 4. Click "Next"
 5. Click "Next"
-6. Update Trust Policy
-   - Change service from "ec2.amazon.com" to  "vpc-flow-logs.amazonaws.com"
 6. Role name: `vpc-flow-logs-role`
-7. Click "Create role"
-8. Select the newly created role → "Permissions" tab → "Add permissions" → "Create inline policy"
-9. Switch to JSON editor and paste:
+7. Update Trust Policy
+   - Change service from "ec2.amazon.com" to  "vpc-flow-logs.amazonaws.com"
+8. Click "Create role"
+9. Select the newly created role → "Permissions" tab → "Add permissions" → "Create inline policy"
+10. Switch to JSON editor and paste:
    ```json
    {
      "Version": "2012-10-17",
@@ -147,8 +147,8 @@ This lab creates two VPCs in different availability zones, establishes a peering
      }]
    }
    ```
-10. Policy name: `vpc-flow-logs-policy`
-11. Click "Create policy"
+11. Policy name: `vpc-flow-logs-policy`
+12. Click "Create policy"
 
 ### 9. Create CloudWatch Log Groups
 1. Navigate to CloudWatch Dashboard
