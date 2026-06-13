@@ -123,9 +123,11 @@ This lab creates two VPCs in different availability zones, establishes a peering
 2. Select "Roles" → "Create role"
 3. Configure:
    - Trusted entity type: AWS service
-   - Use case: Select "EC2" then search for and select "VPC Flow Logs"
+   - Use case: Select "EC2" 
 4. Click "Next"
-5. Click "Next" (skip permissions for now)
+5. Click "Next"
+6. Update Trust Policy
+   - Change service from "ec2.amazon.com" to  "vpc-flow-logs.amazonaws.com"
 6. Role name: `vpc-flow-logs-role`
 7. Click "Create role"
 8. Select the newly created role → "Permissions" tab → "Add permissions" → "Create inline policy"
